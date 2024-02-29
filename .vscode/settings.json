@@ -1,0 +1,8 @@
+{
+    "conventionalCommits.scopes": [
+        "ci-cd",
+        "config",
+        "docs",
+        "auth",
+    ]
+}
