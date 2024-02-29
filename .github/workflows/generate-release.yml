@@ -1,0 +1,97 @@
+name: Generate Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release:
+    if: |
+      github.event.pull_request.merged == true &&
+      ${{ !contains(github.event.pull_request.title, 'chore(release): :bookmark: update changelog') }}
+    name: Semantic Versionning (Tag & Release)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Up Committer as GitHub Actions Bot
+        run: |
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions[bot]
+          git config --global user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config --global user.name github-actions[bot]
+
+      - name: Get Previous Tag
+        id: get-previous-tag
+        uses: WyriHaximus/github-action-get-previous-tag@v1.4
+        with:
+          fallback: 0.0.0
+
+      - name: Bump Version
+        id: bump-version
+        uses: cocogitto/cocogitto-action@v3.6
+        with:
+          git-user-email: "41898282+github-actions[bot]@users.noreply.github.com"
+          git-user: "github-actions[bot]"
+          check-latest-tag-only: true
+          release: true
+
+      - name: Get Bumped Tag
+        id: get-bumped-tag
+        uses: WyriHaximus/github-action-get-previous-tag@v1.4
+        with:
+          fallback: 0.0.0
+
+      - name: Check Bumped Tag
+        id: check-bumped-tag
+        run: |
+          echo "bumped=${{ steps.get-bumped-tag.outputs.tag != steps.get-previous-tag.outputs.tag }}" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        if: ${{ steps.check-bumped-tag.outputs.bumped == 'true' }}
+        id: generate-changelog
+        run: |
+          echo 'changelog<<EOF' >> $GITHUB_OUTPUT
+          cog changelog --at ${{ steps.bump-version.outputs.version }} -t full_hash >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: ${{ steps.check-bumped-tag.outputs.bumped == 'true' }}
+        id: create-pull-request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(release): update changelog for ${{ steps.bump-version.outputs.version }}"
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          branch: release/changelog/${{ steps.bump-version.outputs.version }}
+          delete-branch: true
+          title: "chore(release): :bookmark: update changelog for ${{ steps.bump-version.outputs.version }}"
+          body: ${{ steps.generate-changelog.outputs.changelog }}
+          labels: |
+            documentation
+            automated pr
+          assignees: cyboooooorg
+          reviewers: cyboooooorg
+          draft: false
+
+      - name: Generate Release From Latest Tag
+        if: ${{ steps.check-bumped-tag.outputs.bumped == 'true' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.generate-changelog.outputs.changelog }}
+          tag_name: ${{ steps.bump-version.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable Pull Request Automerge
+        if: ${{ steps.check-bumped-tag.outputs.bumped == 'true' }}
+        run: gh pr merge --merge --auto -d "${{ steps.create-pull-request.outputs.pull-request-number }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
