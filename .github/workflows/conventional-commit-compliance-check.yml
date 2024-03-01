@@ -1,7 +1,6 @@
 name: C.C.C.C. (Conventional Commits Compliance Check)
 
 on:
-  push:
   pull_request:
 
 jobs:
