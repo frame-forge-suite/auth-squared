@@ -1,0 +1,18 @@
+version: "3"
+
+tasks:
+  init-env:
+    desc: Copy all .env.example files to .env files if they do not exist
+    aliases: [ie]
+    cmds:
+      - powershell: if (!(Test-Path {{ .ITEM }})) { Copy-Item {{ .ITEM }}.example {{ .ITEM }} }
+        for:
+          var: ENV_FILES
+          split: ","
+      - echo "Environment files initialized, you may want to edit them now (especially the root .env file)"
+      - echo "Here are the files that were initialized:"
+      - powershell: ls {{ .ITEM }}
+        for:
+          var: ENV_FILES
+          split: ","
+    silent: true

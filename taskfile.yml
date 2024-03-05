@@ -1,0 +1,25 @@
+# https://taskfile.dev
+
+version: "3"
+
+dotenv: ["taskfiles/config/.env"]
+
+includes:
+  docker:
+    taskfile: taskfiles/taskfile-docker_{{OS}}.yml
+    aliases: [d]
+  project:
+    taskfile: taskfiles/taskfile-project_{{OS}}.yml
+    aliases: [p]
+    vars:
+      ENV_FILES: .env,taskfiles/config/.env,.docker/auth-squared/config/.env,.docker/supervision/grafana/config/.env
+
+tasks:
+  # ---------------------------------------- #
+  # Default tasks
+  # ---------------------------------------- #
+
+  default:
+    desc: Show this help message
+    cmd: task --list-all
+    silent: true

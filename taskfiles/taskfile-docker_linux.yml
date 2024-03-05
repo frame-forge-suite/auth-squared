@@ -1,0 +1,106 @@
+version: "3"
+
+vars:
+  CONTAINER_NAMES:
+    sh: docker ps -a --format '{{"{{"}}.Names{{"}}"}}' --filter "name={{ .DOCKER_CONTAINERS_PREFIX }}" | awk '{printf("%s,", $0)}'
+
+tasks:
+  show:
+    desc: Show containers described in the stack
+    aliases: [s]
+    preconditions:
+      - sh: test -f .env
+        msg: "File .env not found"
+      - sh: test -f docker-compose.yml
+        msg: "File docker-compose.yml not found"
+    cmds:
+      - docker ps -as --format 'table {{"{{"}}.ID{{"}}"}}\t{{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Size{{"}}"}}' --filter "name={{ .DOCKER_CONTAINERS_PREFIX }}"
+    silent: true
+
+  show-all:
+    desc: Show containers and volumes described in the stack
+    aliases: [sa]
+    preconditions:
+      - sh: test -f .env
+        msg: "File .env not found"
+      - sh: test -f docker-compose.yml
+        msg: "File docker-compose.yml not found"
+    cmds:
+      - echo "===================================================================================================="
+      - echo "# Containers:"
+      - echo "===================================================================================================="
+      - docker ps -as --format 'table {{"{{"}}.ID{{"}}"}}\t{{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Size{{"}}"}}' --filter "name={{ .DOCKER_CONTAINERS_PREFIX }}"
+      - echo ""
+      - echo "===================================================================================================="
+      - echo "# Volumes:"
+      - echo "===================================================================================================="
+      - docker volume ls --format 'table {{"{{"}}.Name{{"}}"}}\t{{"{{"}}.Driver{{"}}"}}\t{{"{{"}}.Mountpoint{{"}}"}}' --filter "name={{ .DOCKER_VOLUMES_PREFIX }}"
+      - echo ""
+      - echo "===================================================================================================="
+      - echo "# Networks:"
+      - echo "===================================================================================================="
+      - docker network ls --format 'table {{"{{"}}.Name{{"}}"}}\t{{"{{"}}.Driver{{"}}"}}\t{{"{{"}}.Scope{{"}}"}}' --filter "name={{ .DOCKER_NETWORKS_PREFIX }}"
+    silent: true
+
+  build:
+    desc: Build services described in the stack
+    aliases: [b]
+    preconditions:
+      - sh: test -f .env
+        msg: "File .env not found"
+      - sh: test -f docker-compose.yml
+        msg: "File docker-compose.yml not found"
+    cmds:
+      - docker compose build
+    silent: true
+
+  up:
+    desc: Create (build if images does not exists) and start containers described in the stack
+    aliases: [u]
+    preconditions:
+      - sh: test -f .env
+        msg: "File .env not found"
+      - sh: test -f docker-compose.yml
+        msg: "File docker-compose.yml not found"
+    cmds:
+      - docker compose up -d --remove-orphans
+    silent: true
+
+  down:
+    desc: Stop and remove containers and networks described in the stack
+    aliases: [d]
+    preconditions:
+      - sh: test -f .env
+        msg: "File .env not found"
+      - sh: test -f docker-compose.yml
+        msg: "File docker-compose.yml not found"
+    cmds:
+      - docker compose down
+    silent: true
+
+  down-full:
+    desc: Stop and remove containers, networks and volumes described in the stack
+    aliases: [df]
+    preconditions:
+      - sh: test -f .env
+        msg: "File .env not found"
+      - sh: test -f docker-compose.yml
+        msg: "File docker-compose.yml not found"
+    cmds:
+      - docker compose down -v
+    silent: true
+
+  logs:
+    desc: Show logs for services
+    aliases: [l]
+    preconditions:
+      - sh: test -f .env
+        msg: "File .env not found"
+      - sh: test -f docker-compose.yml
+        msg: "File docker-compose.yml not found"
+    cmds:
+      - cmd: gnome-terminal --title="{{ .ITEM }}" -- sh -c "bash -c \"docker logs -f {{ .ITEM }};\""
+        for:
+          var: CONTAINER_NAMES
+          split: ","
+    silent: true
