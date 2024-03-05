@@ -54,8 +54,6 @@ services:
     restart: unless-stopped
     env_file:
       - .docker/auth-squared/config/.env
-    profiles:
-      - development
     volumes:
       - venv-virtual-volume:/opt/.venv:rw
       - workspace-physical-volume:/home/auth-squared/workspace:rw
@@ -78,9 +76,6 @@ services:
     restart: unless-stopped
     env_file:
       - .docker/auth-squared/config/.env
-    profiles:
-      - development
-      - runtime
     volumes:
       - venv-virtual-volume:/opt/.venv:rw
       - workspace-physical-volume:/home/auth-squared/workspace:rw
