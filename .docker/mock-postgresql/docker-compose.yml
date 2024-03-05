@@ -21,7 +21,7 @@ services:
     container_name: auth-sq_adminer
     restart: unless-stopped
     ports:
-      - "${ADMINER_PORT:-err}:8080"
+      - "${ADM_PORT:-err}:8080"
     env_file:
       - ./adminer/config/.env
     networks:
