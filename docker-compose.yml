@@ -64,7 +64,7 @@ services:
   # API service container
   # ---------------------------------------------------------------------------------------------------- #
   app-service-api:
-    image: auth-squared:dev
+    image: auth-squared:dev-runtime
     build:
       context: .
       dockerfile: .docker/auth-squared/Dockerfile
