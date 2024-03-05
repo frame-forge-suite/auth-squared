@@ -88,4 +88,5 @@ services:
 # Include other services
 # ---------------------------------------------------------------------------------------------------- #
 include:
+  - .docker/mock-postgresql/docker-compose.yml
   - .docker/supervision/docker-compose.yml

@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Database PostgreSQL Service
+  # ---------------------------------------------------------------------------------------------------- #
+  db-service-postgresql:
+    image: postgres:16.2-bullseye
+    container_name: auth-sq_postgresql
+    restart: unless-stopped
+    env_file:
+      - ./postgresql/config/.env
+    networks:
+      - default
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # Database Adminer Service
+  # ---------------------------------------------------------------------------------------------------- #
+  db-service-adminer:
+    image: adminer:latest
+    container_name: auth-sq_adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-err}:8080"
+    env_file:
+      - ./adminer/config/.env
+    networks:
+      - default
+
+volumes:
+  # ---------------------------------------------------------------------------------------------------- #
+  # PostgreSQL Data Volume
+  # ---------------------------------------------------------------------------------------------------- #
+  postgresql-data-volume:
+    driver: local
