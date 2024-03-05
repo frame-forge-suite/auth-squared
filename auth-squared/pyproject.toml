@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "auth-squared"
+version = "0.0.0"
+description = ""
+authors = ["Cyborg <martin.crampon@symamobile.com>"]
+readme = ""
+packages = []
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.104.1"
+pydantic = "^2.5.2"
+pydantic-settings = "^2.1.0"
+httptools = "^0.6.1"
+requests = "^2.31.0"
+alembic = "^1.13.0"
+pytest = "^7.4.3"
+jsonschema = "^4.20.0"
+swagger-ui-py = "^23.9.23"
+uvicorn = "0.24.0"
+redis = "^5.0.1"
+python-slugify = "^8.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

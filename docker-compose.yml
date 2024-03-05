@@ -1,0 +1,90 @@
+version: '3.8'
+
+# Set the project name
+name: auth-squared
+
+# ---------------------------------------------------------------------------------------------------- #
+# Networks
+# ---------------------------------------------------------------------------------------------------- #
+networks:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Default network for the application
+  # ---------------------------------------------------------------------------------------------------- #
+  default:
+    driver: bridge
+
+# ---------------------------------------------------------------------------------------------------- #
+# Volumes
+# ---------------------------------------------------------------------------------------------------- #
+volumes:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Virtual environment volume
+  # ---------------------------------------------------------------------------------------------------- #
+  venv-virtual-volume:
+    driver: local
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # Workspace volume, for development only (share the codebase between the host and the containers)
+  # ---------------------------------------------------------------------------------------------------- #
+  workspace-physical-volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./
+
+# ---------------------------------------------------------------------------------------------------- #
+# Services
+# ---------------------------------------------------------------------------------------------------- #
+
+services:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Development service container (for development only, not for production)
+  # ---------------------------------------------------------------------------------------------------- #
+  app-service-dev:
+    image: auth-squared:dev-local
+    build:
+      context: .
+      dockerfile: .docker/auth-squared/Dockerfile
+      target: development
+      args:
+        UID: ${UID}
+    user: ${UID}
+    container_name: auth-sq_dev
+    restart: unless-stopped
+    env_file:
+      - .docker/auth-squared/config/.env
+    profiles:
+      - development
+    volumes:
+      - venv-virtual-volume:/opt/.venv:rw
+      - workspace-physical-volume:/home/auth-squared/workspace:rw
+    networks:
+      - default
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # API service container
+  # ---------------------------------------------------------------------------------------------------- #
+  app-service-api:
+    image: auth-squared:dev
+    build:
+      context: .
+      dockerfile: .docker/auth-squared/Dockerfile
+      target: runtime
+      args:
+        UID: ${UID}
+    user: ${UID}
+    container_name: auth-sq_api
+    restart: unless-stopped
+    env_file:
+      - .docker/auth-squared/config/.env
+    profiles:
+      - development
+      - runtime
+    volumes:
+      - venv-virtual-volume:/opt/.venv:rw
+      - workspace-physical-volume:/home/auth-squared/workspace:rw
+    ports:
+      - ${APP_PORT}:80
+    networks:
+      - default
