@@ -1,0 +1,42 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-docker-compose
+{
+    "name": "ffs-auth-squared",
+    "dockerComposeFile": [
+        "../docker-compose.yml"
+    ],
+    "service": "app-service-dev",
+    "workspaceFolder": "/home/auth-squared/workspace",
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "github.copilot",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.black-formatter",
+                "charliermarsh.ruff",
+                "nickdemayo.vscode-json-editor",
+                "mikestead.dotenv",
+                "mtxr.sqltools",
+                "aaron-bond.better-comments",
+                "waderyan.gitblame",
+                "mhutchie.git-graph",
+                "donjayamanne.githistory",
+                "codezombiech.gitignore",
+                "shd101wyy.markdown-preview-enhanced",
+                "davidanson.vscode-markdownlint",
+                "ms-azuretools.vscode-docker",
+                "tommorris.mako",
+                "mgesbert.python-path",
+                "task.vscode-task",
+                "postman.postman-for-vscode",
+                "vivaxy.vscode-conventional-commits",
+                "mtxr.sqltools-driver-mysql"
+            ]
+        }
+    },
+    "shutdownAction": "none"
+}
