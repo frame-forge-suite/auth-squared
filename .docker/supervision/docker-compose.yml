@@ -1,0 +1,98 @@
+version: '3.8'
+
+networks:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Supervision network
+  # This network is used to connect the supervision services together.
+  # ---------------------------------------------------------------------------------------------------- #
+  supervision:
+    driver: bridge
+
+volumes:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Loki data volume
+  # This volume is used to store loki data (logs) in order to persist them between container restarts.
+  # ---------------------------------------------------------------------------------------------------- #
+  loki-virtual-volume:
+    driver: local
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # Grafana data volume
+  # This volume is used to store grafana data (dashboards, users, etc.) in order to persist them
+  # between container restarts.
+  # ---------------------------------------------------------------------------------------------------- #
+  grafana-virtual-volume:
+    driver: local
+
+services:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Loki service
+  # This service is used to store logs from the other services and serve them to Grafana.
+  # ---------------------------------------------------------------------------------------------------- #
+  supervision-service-loki:
+    container_name: auth-sq_loki
+    image: grafana/loki:2.8.8
+    restart: unless-stopped
+    volumes:
+      - loki-virtual-volume:/etc/loki:rw
+    networks:
+      - supervision
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # Promtail service
+  # This service is used to collect logs from the other services and send them to Loki.
+  # ---------------------------------------------------------------------------------------------------- #
+  supervision-service-promtail:
+    container_name: auth-sq_promtail
+    image: grafana/promtail:2.9.4
+    restart: unless-stopped
+    depends_on:
+      - supervision-service-loki
+    volumes:
+      # ? We send our config inside the container in order for it to read logs from the containers of this project
+      - ./promtail/config/promtail-config.yml:/etc/promtail/config.yml:ro
+      # ? We volumize the docker socket to read container labels and logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - supervision
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # Grafana service
+  # This service is used to display logs from Loki and create dashboards.
+  # ---------------------------------------------------------------------------------------------------- #
+  supervision-service-grafana:
+    container_name: auth-sq_grafana
+    image: grafana/grafana:10.3.1
+    restart: unless-stopped
+    depends_on:
+      - supervision-service-loki
+    env_file:
+      - ./grafana/config/.env
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Loki
+          type: loki
+          access: proxy
+          orgId: 1
+          url: http://supervision-service-loki:3100
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+        EOF
+        /run.sh
+    user: ${UID:-1000}
+    volumes:
+      # ? Store grafana data on persistent volume in order to keep dashboards and users between container restarts
+      - grafana-virtual-volume:/var/lib/grafana:rw
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    networks:
+      - supervision
