@@ -9,7 +9,7 @@
 
 # Set the default arguments
 ARG PROJECT_NAME=auth-squared
-ARG PROJECT_FOLDER=${PROJECT_NAME}
+ARG PROJECT_FOLDER=resources
 ARG VENV_PARENT_DIR=/opt
 ARG POETRY_VERSION=1.7.1
 ARG UID=1000
@@ -137,6 +137,7 @@ ARG USR_NAME
 ARG GRP_NAME
 ARG USR_HOME
 ARG USER_PWD
+ARG PROJECT_NAME
 ARG PROJECT_FOLDER
 
 # Set the environment variables
@@ -163,10 +164,10 @@ COPY --from=build --chown=${USR_NAME}:${GRP_NAME} ${VENV_PARENT_DIR}/.venv ${VEN
 COPY --from=build --chown=${USR_NAME}:${GRP_NAME} /bin/docker-entrypoint* /bin/
 
 # Copy the application files
-COPY --chown=${USR_NAME}:${GRP_NAME} ${PROJECT_FOLDER}/ ${USR_HOME}/apps/${PROJECT_FOLDER}/
+COPY --chown=${USR_NAME}:${GRP_NAME} ${PROJECT_FOLDER}/ ${USR_HOME}/apps/${PROJECT_NAME}/
 
 # Set the working directory
-WORKDIR ${USR_HOME}/apps/${PROJECT_FOLDER}/
+WORKDIR ${USR_HOME}/apps/${PROJECT_NAME}/
 
 # Set the entrypoint
 ENTRYPOINT ["docker-entrypoint"]
