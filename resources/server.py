@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
-from resources.config.settings import settings
+from app.config.settings import settings
 
 app = FastAPI()
 
