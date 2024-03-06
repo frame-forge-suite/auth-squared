@@ -33,6 +33,16 @@ volumes:
       o: bind
       device: ./
 
+  # ---------------------------------------------------------------------------------------------------- #
+  # App codebase volume
+  # ---------------------------------------------------------------------------------------------------- #
+  app-physical-volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./resources
+
 # ---------------------------------------------------------------------------------------------------- #
 # Services
 # ---------------------------------------------------------------------------------------------------- #
@@ -78,7 +88,7 @@ services:
       - .docker/auth-squared/config/.env
     volumes:
       - venv-virtual-volume:/opt/.venv:rw
-      - workspace-physical-volume:/home/auth-squared/workspace:rw
+      - app-physical-volume:/home/auth-squared/apps/auth-squared:rw
     ports:
       - ${APP_PORT:-err}:80
     networks:
