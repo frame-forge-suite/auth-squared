@@ -1,0 +1,24 @@
+[
+  {
+    "compressor": "NONE",
+    "id": "b6881da3-625c-44b1-a6ae-f4070ee39616",
+    "host": "cache-service-redis",
+    "port": 6379,
+    "name": "Auth Squared",
+    "db": 0,
+    "username": "default",
+    "password": "P455w0rd",
+    "connectionType": "STANDALONE",
+    "nameFromProvider": null,
+    "provider": "UNKNOWN",
+    "lastConnection": "2024-03-05T13:45:05.131Z",
+    "modules": [],
+    "tls": null,
+    "tlsServername": null,
+    "verifyServerCert": null,
+    "caCert": null,
+    "clientCert": null,
+    "ssh": null,
+    "sshOptions": null
+  }
+]

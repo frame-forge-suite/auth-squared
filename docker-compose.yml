@@ -1,0 +1,103 @@
+version: '3.8'
+
+# Set the project name
+name: auth-squared
+
+# ---------------------------------------------------------------------------------------------------- #
+# Networks
+# ---------------------------------------------------------------------------------------------------- #
+networks:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Default network for the application
+  # ---------------------------------------------------------------------------------------------------- #
+  default:
+    driver: bridge
+
+# ---------------------------------------------------------------------------------------------------- #
+# Volumes
+# ---------------------------------------------------------------------------------------------------- #
+volumes:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Virtual environment volume
+  # ---------------------------------------------------------------------------------------------------- #
+  venv-virtual-volume:
+    driver: local
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # Workspace volume, for development only (share the codebase between the host and the containers)
+  # ---------------------------------------------------------------------------------------------------- #
+  workspace-physical-volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # App codebase volume
+  # ---------------------------------------------------------------------------------------------------- #
+  app-physical-volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./resources
+
+# ---------------------------------------------------------------------------------------------------- #
+# Services
+# ---------------------------------------------------------------------------------------------------- #
+
+services:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Development service container (for development only, not for production)
+  # ---------------------------------------------------------------------------------------------------- #
+  app-service-dev:
+    image: auth-squared:dev-local
+    build:
+      context: .
+      dockerfile: .docker/auth-squared/Dockerfile
+      target: development
+      args:
+        UID: ${UID:-1000}
+    user: ${UID:-1000}
+    container_name: auth-sq_dev
+    restart: unless-stopped
+    env_file:
+      - .docker/auth-squared/config/.env
+    volumes:
+      - venv-virtual-volume:/opt/.venv:rw
+      - workspace-physical-volume:/home/auth-squared/workspace:rw
+    networks:
+      - default
+
+  # ---------------------------------------------------------------------------------------------------- #
+  # API service container
+  # ---------------------------------------------------------------------------------------------------- #
+  app-service-api:
+    image: auth-squared:dev-runtime
+    build:
+      context: .
+      dockerfile: .docker/auth-squared/Dockerfile
+      target: runtime
+      args:
+        UID: ${UID:-1000}
+    user: ${UID:-1000}
+    container_name: auth-sq_api
+    restart: unless-stopped
+    env_file:
+      - .docker/auth-squared/config/.env
+    volumes:
+      - venv-virtual-volume:/opt/.venv:rw
+      - app-physical-volume:/home/auth-squared/apps/auth-squared:rw
+    ports:
+      - ${APP_PORT:-err}:80
+    networks:
+      - default
+
+# ---------------------------------------------------------------------------------------------------- #
+# Include other services
+# ---------------------------------------------------------------------------------------------------- #
+include:
+  - .docker/mock-redis/docker-compose.yml
+  - .docker/mock-postgresql/docker-compose.yml
+  - .docker/supervision/docker-compose.yml

@@ -1,8 +1,21 @@
 {
+    "keyboard.dispatch": "keyCode",
+    "python.pythonPath": "/opt/.venv/bin/python",
+    "python.defaultInterpreterPath": "/opt/.venv/bin/python",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+    },
+    "python.analysis.extraPaths": [
+        "/opt/.venv/lib/python3.12/site-packages/"
+    ],
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.autoImportCompletions": false,
     "conventionalCommits.scopes": [
         "ci-cd",
         "config",
         "docs",
         "auth",
+        "app"
     ]
 }

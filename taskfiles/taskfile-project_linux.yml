@@ -1,0 +1,18 @@
+version: "3"
+
+tasks:
+  init-env:
+    desc: Copy all .env.example files to .env files if they do not exist
+    aliases: [ie]
+    cmds:
+      - cmd: cp -n {{ .ITEM }}.example {{ .ITEM }}
+        for:
+          var: ENV_FILES
+          split: ","
+      - echo "Environment files initialized, you may want to edit them now (especially the root .env file)"
+      - echo "Here are the files that were initialized:"
+      - cmd: ls -la {{ .ITEM }}
+        for:
+          var: ENV_FILES
+          split: ","
+    silent: true
