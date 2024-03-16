@@ -7,180 +7,182 @@
 # Pre-stage: Arguments
 # ------------------------------------------------------------------------------------------ #
 
-# Set the default arguments
-ARG PROJECT_NAME=auth-squared
-ARG PROJECT_FOLDER=resources
-ARG VENV_PARENT_DIR=/opt
-ARG POETRY_VERSION=1.7.1
+# * Set the default arguments values
+ARG PRJ_NAME=project
+ARG RSC_DIR=./resources
+ARG VENV_DIR=/opt/.venv
+ARG POETRY_VERSION=1.8.2
 ARG UID=1000
 ARG GID=${UID}
-ARG USR_NAME=${PROJECT_NAME}
+ARG USR_NAME=app-runner
 ARG GRP_NAME=${USR_NAME}
 ARG USR_HOME=/home/${USR_NAME}
-ARG USER_PWD=p455w0rd
+ARG USR_PWD=P455w0rd
+
 
 # ------------------------------------------------------------------------------------------ #
 # End of Pre-stage: Arguments
 # ------------------------------------------------------------------------------------------ #
+#
+##############################################################################################
+#
+# ------------------------------------------------------------------------------------------ #
+# Stage 00 - Base
+# This stage is used to install the system dependencies and add create the user
+# ------------------------------------------------------------------------------------------ #
+FROM python:3.12.0-bullseye AS base
 
+# * Re declare arguments
+ARG UID
+ARG GID
+ARG USR_NAME
+ARG GRP_NAME
+ARG USR_HOME
+ARG USR_PWD
+
+# * Install the system dependencies
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends && \
+    apt-get install -y sudo && \
+    apt autoclean && \
+    apt autoremove && \
+    rm -rf /var/lib/apt/lists/*
+
+# * Create a user and group to run the application
+RUN groupadd -g ${GID} ${GRP_NAME} && \
+    useradd -rm -d ${USR_HOME} -s /bin/bash -u ${UID} -g ${GRP_NAME} ${USR_NAME} && \
+    echo "${USR_PWD}\n${USR_PWD}\n" | passwd ${USR_NAME} && \
+    sudo adduser ${USR_NAME} sudo
+
+# ------------------------------------------------------------------------------------------ #
+# End of Stage 00 - Base
+# ------------------------------------------------------------------------------------------ #
+#
+##############################################################################################
+#
 # ------------------------------------------------------------------------------------------ #
 # Stage 01 - Build
 # This stage is used to build the application (for development and production)
 # ------------------------------------------------------------------------------------------ #
-FROM python:3.12.0-bullseye AS build
+FROM base AS build
 
-# Re declare arguments
-ARG PROJECT_NAME
-ARG PROJECT_FOLDER
-ARG VENV_PARENT_DIR
+# * Re declare arguments
+ARG PRJ_NAME
+ARG RSC_DIR
+ARG VENV_DIR
 ARG POETRY_VERSION
+ARG PIP_USR
+ARG PIP_PWD
+ARG PIP_URL
 
-# Set the environment variables
-ENV VENV_PATH="${VENV_PARENT_DIR}/.venv"
+# * Copy the poetry files to the temporary folder
+COPY ${RSC_DIR}/poetry.lock ${RSC_DIR}/pyproject.toml /tmp/
 
-# Install the system dependencies
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends && \
-    apt-get install -y sudo && \
-    apt autoclean && \
-    apt autoremove && \
-    rm -rf /var/lib/apt/lists/*
+# * Set the working directory to the temporary folder
+WORKDIR /tmp
 
-# Copy the poetry files
-COPY ${PROJECT_FOLDER}/poetry.lock ${PROJECT_FOLDER}/pyproject.toml ${VENV_PARENT_DIR}/
-
-# Set the working directory
-WORKDIR ${VENV_PARENT_DIR}
-
-# Create the virtual environment, install poetry and build the application
-RUN python -m venv $VENV_PATH && \
+# * Create the virtual environment, install poetry and the dependencies
+RUN python -m venv ${VENV_DIR} && \
     pip install --upgrade pip && \
-    bash -c  "source ${VENV_PATH}/bin/activate" && \
+    bash -c  "source ${VENV_DIR}/bin/activate" && \
     pip install poetry==${POETRY_VERSION} && \
-    poetry install --no-root
+    poetry install --no-root --no-interaction --no-ansi -vvv
 
-# Copy the docker entrypoints and set them executable
-COPY .docker/${PROJECT_NAME}/entrypoints/docker-entrypoint* /bin/
+# * Copy the docker entrypoints and set them executable
+COPY .docker/build-app/entrypoints/docker-entrypoint* /bin/
 RUN chmod +x /bin/docker-entrypoint*
-
 
 # ------------------------------------------------------------------------------------------ #
 # End of Stage 01 - Build
 # ------------------------------------------------------------------------------------------ #
-
+#
 ##############################################################################################
-
+#
 # ------------------------------------------------------------------------------------------ #
-# Stage 02-DEV - Development Build
+# Stage DEV - Development Build
 # This stage is used to run the application in development
 # ------------------------------------------------------------------------------------------ #
 FROM build AS development
 
-# Re declare arguments
-ARG VENV_PARENT_DIR
-ARG UID
-ARG GID
+# * Re declare arguments
+ARG VENV_DIR
 ARG USR_NAME
 ARG GRP_NAME
 ARG USR_HOME
-ARG USER_PWD
 
-# Set the environment variables
-ENV VENV_PATH="${VENV_PARENT_DIR}/.venv"
-ENV PATH="$VENV_PATH/bin:$PATH"
+# * Update Path
+ENV PATH="${VENV_DIR}/bin:$PATH"
+ENV PATH="${USR_HOME}/.local/bin:$PATH"
 
-# Create a user and group to run the application
-RUN groupadd -g ${GID} ${GRP_NAME} && \
-    useradd -rm -d ${USR_HOME} -s /bin/bash -u ${UID} -g ${GRP_NAME} ${USR_NAME} && \
-    echo "${USER_PWD}\n${USER_PWD}\n" | passwd ${USR_NAME} && \
-    sudo adduser ${USR_NAME} sudo
-
-# Set the user
+# * Set the user
 USER ${USR_NAME}
 
-# Copy the whole repository to the workspace
-ADD --chown=${USR_NAME}:${GRP_NAME} . ${USR_HOME}/workspace
-
-# Set the working directory
-# No need to copy the files again, as they are already in the workspace through the volume
+# * Create and set the working directory
+# ? No need to copy the files, as they will be in the workspace through the volume
+RUN mkdir -p ${USR_HOME}/workspace
 WORKDIR ${USR_HOME}/workspace
 
-# Copy the venv and the docker entrypoints from the build stage
-COPY --from=build --chown=${USR_NAME}:${GRP_NAME} ${VENV_PARENT_DIR}/.venv ${VENV_PARENT_DIR}/.venv
+# * Copy the venv and the docker entrypoints from the build stage
+COPY --from=build --chown=${USR_NAME}:${GRP_NAME} ${VENV_DIR} ${VENV_DIR}
 COPY --from=build --chown=${USR_NAME}:${GRP_NAME} /bin/docker-entrypoint* /bin/
 
-# Install Task (https://taskfile.dev/#/) for dev purposes
-ENV PATH="${USR_HOME}/.local/bin:$PATH"
+# * Install Task (https://taskfile.dev/#/) for dev purposes
 RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
 
-# Set the entrypoint
+# * Set the entrypoint for the development container
 ENTRYPOINT ["docker-entrypoint-dev"]
 
 # ------------------------------------------------------------------------------------------ #
-# End of Stage 02-DEV - Development Build
+# End of Stage DEV - Development Build
 # ------------------------------------------------------------------------------------------ #
-
+#
 ##############################################################################################
-
+#
 # ------------------------------------------------------------------------------------------ #
 # Stage 02 - Runtime
 # This stage is used to run the application in production
 # ------------------------------------------------------------------------------------------ #
-FROM python:3.12.0-bullseye AS runtime
+FROM base AS runtime
 
-# Re declare arguments
-ARG VENV_PARENT_DIR
-ARG UID
-ARG GID
+# * Re declare arguments
+ARG PRJ_NAME
+ARG RSC_DIR
+ARG VENV_DIR
 ARG USR_NAME
 ARG GRP_NAME
 ARG USR_HOME
-ARG USER_PWD
-ARG PROJECT_NAME
-ARG PROJECT_FOLDER
 
-# Set the environment variables
-ENV VENV_PATH="${VENV_PARENT_DIR}/.venv"
-ENV PATH="$VENV_PATH/bin:$PATH"
+# * Update Path
+ENV PATH="${VENV_DIR}/bin:$PATH"
+ENV PATH="${USR_HOME}/.local/bin:$PATH"
 
-# Install the system dependencies
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends && \
-    apt-get install -y sudo && \
-    apt autoclean && \
-    apt autoremove && \
-    rm -rf /var/lib/apt/lists/*
+# * Set the user
+USER ${USR_NAME}
 
-# Create a user and group to run the application
-RUN groupadd -g ${GID} ${GRP_NAME} && \
-    useradd -rm -d ${USR_HOME} -s /bin/bash -u ${UID} -g ${GRP_NAME} ${USR_NAME} && \
-    echo "${USER_PWD}\n${USER_PWD}\n" | passwd ${USR_NAME} && \
-    sudo adduser ${USR_NAME} sudo
+# * Copy the application files
+# ? Local `__pycache__` and `.pytest_cache` are not copied to the container thanks to the `.dockerignore` file
+COPY --chown=${USR_NAME}:${GRP_NAME} ${RSC_DIR}/ ${USR_HOME}/apps/${PRJ_NAME}/
 
-# Copy the venv and the docker entrypoints from the build stage
-COPY --from=build --chown=${USR_NAME}:${GRP_NAME} ${VENV_PARENT_DIR}/.venv ${VENV_PARENT_DIR}/.venv
+# * Copy the venv and the docker entrypoints from the build stage
+COPY --from=build --chown=${USR_NAME}:${GRP_NAME} ${VENV_DIR} ${VENV_DIR}
 COPY --from=build --chown=${USR_NAME}:${GRP_NAME} /bin/docker-entrypoint* /bin/
 
-# Copy the application files
-COPY --chown=${USR_NAME}:${GRP_NAME} ${PROJECT_FOLDER}/ ${USR_HOME}/apps/${PROJECT_NAME}/
+# * Set the working directory
+WORKDIR ${USR_HOME}/apps/${PRJ_NAME}/
 
-# Set the working directory
-WORKDIR ${USR_HOME}/apps/${PROJECT_NAME}/
-
-# Set the entrypoint
+# * Set the entrypoint for the runtime container
 ENTRYPOINT ["docker-entrypoint"]
 
-# Expose the port
+# * Expose the port
 EXPOSE 80
 
 # ------------------------------------------------------------------------------------------ #
 # End of Stage 02 - Runtime
 # ------------------------------------------------------------------------------------------ #
-
+#
 ##############################################################################################
-
+#
 # ------------------------------------------------------------------------------------------ #
 # Default Stage
 # This is the default stage used to build the image if no target is specified

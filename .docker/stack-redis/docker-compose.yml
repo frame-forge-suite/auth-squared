@@ -1,5 +1,18 @@
 version: '3.8'
 
+# ---------------------------------------------------------------------------------------------------- #
+# Networks
+# ---------------------------------------------------------------------------------------------------- #
+networks:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Default network
+  # ---------------------------------------------------------------------------------------------------- #
+  stack-redis:
+    driver: bridge
+
+# ---------------------------------------------------------------------------------------------------- #
+# Services
+# ---------------------------------------------------------------------------------------------------- #
 services:
   # ---------------------------------------------------------------------------------------------------- #
   # Redis container
@@ -8,13 +21,14 @@ services:
   # ---------------------------------------------------------------------------------------------------- #
   cache-service-redis:
     image: redis:7.2.4-alpine
-    container_name: auth-sq_redis
+    container_name: ${CTN_PFX:-err}redis
     command: redis-server /opt/redis/redis.conf
     restart: unless-stopped
     volumes:
       - ./redis/config/redis.conf:/opt/redis/redis.conf:ro
     networks:
       - default
+      - stack-redis
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
       interval: 15s
@@ -28,12 +42,12 @@ services:
   # ---------------------------------------------------------------------------------------------------- #
   cache-service-redisinsight:
     image: redis/redisinsight:2.44.0
-    container_name: auth-sq_redisinsight
+    container_name: ${CTN_PFX:-err}redisinsight
     restart: unless-stopped
     ports:
-      - "${REDIS_INSIGHT_PORT:-err}:5540"
+      - "${RDI_PORT:-err}:5540"
     networks:
-      - default
+      - stack-redis
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5540/api/health || exit 1
       interval: 15s

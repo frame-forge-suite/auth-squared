@@ -1,31 +1,47 @@
 version: '3.8'
 
+# ---------------------------------------------------------------------------------------------------- #
+# Networks
+# ---------------------------------------------------------------------------------------------------- #
+networks:
+  # ---------------------------------------------------------------------------------------------------- #
+  # Default network
+  # ---------------------------------------------------------------------------------------------------- #
+  stack-postgresql:
+    driver: bridge
+
+# ---------------------------------------------------------------------------------------------------- #
+# Services
+# ---------------------------------------------------------------------------------------------------- #
 services:
   # ---------------------------------------------------------------------------------------------------- #
   # Database PostgreSQL Service
   # ---------------------------------------------------------------------------------------------------- #
   db-service-postgresql:
     image: postgres:16.2-bullseye
-    container_name: auth-sq_postgresql
+    container_name: ${CTN_PFX:-err}postgresql
     restart: unless-stopped
     env_file:
       - ./postgresql/config/.env
+    ports:
+      - ${DB_PGSQL_EXT_PORT:-5432}:5432 # External Port to access the database with tools like DBeaver
     networks:
       - default
+      - stack-postgresql
 
   # ---------------------------------------------------------------------------------------------------- #
   # Database Adminer Service
   # ---------------------------------------------------------------------------------------------------- #
   db-service-adminer:
     image: adminer:latest
-    container_name: auth-sq_adminer
+    container_name: ${CTN_PFX:-err}adminer
     restart: unless-stopped
     ports:
-      - "${ADM_PORT:-err}:8080"
+      - ${ADM_PORT:-err}:8080
     env_file:
       - ./adminer/config/.env
     networks:
-      - default
+      - stack-postgresql
 
 volumes:
   # ---------------------------------------------------------------------------------------------------- #

@@ -8,7 +8,7 @@ name: auth-squared
 # ---------------------------------------------------------------------------------------------------- #
 networks:
   # ---------------------------------------------------------------------------------------------------- #
-  # Default network for the application
+  # Default network
   # ---------------------------------------------------------------------------------------------------- #
   default:
     driver: bridge
@@ -46,27 +46,27 @@ volumes:
 # ---------------------------------------------------------------------------------------------------- #
 # Services
 # ---------------------------------------------------------------------------------------------------- #
-
 services:
   # ---------------------------------------------------------------------------------------------------- #
   # Development service container (for development only, not for production)
   # ---------------------------------------------------------------------------------------------------- #
   app-service-dev:
-    image: auth-squared:dev-local
+    image: authsq:dev-local
     build:
       context: .
-      dockerfile: .docker/auth-squared/Dockerfile
+      dockerfile: .docker/build-app/Dockerfile
       target: development
       args:
+        PRJ_NAME: auth-squared
         UID: ${UID:-1000}
     user: ${UID:-1000}
-    container_name: auth-sq_dev
+    container_name: ${CTN_PFX:-err}dev
     restart: unless-stopped
     env_file:
-      - .docker/auth-squared/config/.env
+      - .docker/build-app/config/.env
     volumes:
       - venv-virtual-volume:/opt/.venv:rw
-      - workspace-physical-volume:/home/auth-squared/workspace:rw
+      - workspace-physical-volume:/home/app-runner/workspace:rw
     networks:
       - default
 
@@ -74,30 +74,31 @@ services:
   # API service container
   # ---------------------------------------------------------------------------------------------------- #
   app-service-api:
-    image: auth-squared:dev-runtime
+    image: authsq:dev-runtime
     build:
       context: .
-      dockerfile: .docker/auth-squared/Dockerfile
+      dockerfile: .docker/build-app/Dockerfile
       target: runtime
       args:
+        PRJ_NAME: auth-squared
         UID: ${UID:-1000}
     user: ${UID:-1000}
-    container_name: auth-sq_api
+    container_name: ${CTN_PFX:-err}api
     restart: unless-stopped
     env_file:
-      - .docker/auth-squared/config/.env
+      - .docker/build-app/config/.env
     volumes:
       - venv-virtual-volume:/opt/.venv:rw
-      - app-physical-volume:/home/auth-squared/apps/auth-squared:rw
+      - app-physical-volume:/home/app-runner/apps/auth-squared:rw
     ports:
       - ${APP_PORT:-err}:80
     networks:
       - default
 
 # ---------------------------------------------------------------------------------------------------- #
-# Include other services
+# Include other services here
 # ---------------------------------------------------------------------------------------------------- #
 include:
-  - .docker/mock-redis/docker-compose.yml
-  - .docker/mock-postgresql/docker-compose.yml
-  - .docker/supervision/docker-compose.yml
+  - .docker/stack-supervision/docker-compose.yml
+  - .docker/stack-postgresql/docker-compose.yml
+  - .docker/stack-redis/docker-compose.yml

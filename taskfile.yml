@@ -12,7 +12,7 @@ includes:
     taskfile: taskfiles/taskfile-project_{{OS}}.yml
     aliases: [p]
     vars:
-      ENV_FILES: .env,taskfiles/config/.env,.docker/auth-squared/config/.env,.docker/supervision/grafana/config/.env,.docker/mock-postgresql/adminer/config/.env,.docker/mock-postgresql/postgres/config/.env,.docker/mock-postgresql/postgres/config/.env
+      ENV_FILES: .env,taskfiles/config/.env,.docker/build-app/config/.env,.docker/stack-supervision/grafana/config/.env,.docker/stack-postgresql/adminer/config/.env,.docker/stack-postgresql/postgresql/config/.env
 
 tasks:
   # ---------------------------------------- #

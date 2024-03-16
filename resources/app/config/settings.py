@@ -63,7 +63,7 @@ class ServerSettings(BaseSettings):
 class PostgreSQLSettings(BaseSettings):
     """PostgreSQL settings used to connect to the database."""
 
-    model_config = SettingsConfigDict(case_sensitive=False, env_prefix="SQL_")
+    model_config = SettingsConfigDict(case_sensitive=False, env_prefix="POSTGRESQL_")
 
     url: str
 

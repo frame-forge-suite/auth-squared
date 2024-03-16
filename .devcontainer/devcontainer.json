@@ -6,7 +6,7 @@
         "../docker-compose.yml"
     ],
     "service": "app-service-dev",
-    "workspaceFolder": "/home/auth-squared/workspace",
+    "workspaceFolder": "/home/app-runner/workspace",
     "features": {
         "ghcr.io/devcontainers/features/git:1": {}
     },
