@@ -6,6 +6,7 @@ from fastapi.openapi.utils import get_openapi
 
 from app.config.settings import settings
 from app.routers.api import system_utils
+from app.routers import root
 
 app = FastAPI()
 
@@ -16,7 +17,8 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(system_utils.router)
 
 # ? Include main API Router in the app
-app.include_router(api_router)  
+app.include_router(api_router)
+app.include_router(root.router)
 
 
 # ? OpenAPI docs
