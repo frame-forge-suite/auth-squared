@@ -5,7 +5,7 @@ networks:
   # Supervision network
   # This network is used to connect the supervision services together.
   # ---------------------------------------------------------------------------------------------------- #
-  supervision:
+  stack-supervision:
     driver: bridge
 
 volumes:
@@ -30,20 +30,20 @@ services:
   # This service is used to store logs from the other services and serve them to Grafana.
   # ---------------------------------------------------------------------------------------------------- #
   supervision-service-loki:
-    container_name: auth-sq_loki
+    container_name: ${CTN_PFX:-err}loki
     image: grafana/loki:2.8.8
     restart: unless-stopped
     volumes:
       - loki-virtual-volume:/etc/loki:rw
     networks:
-      - supervision
+      - stack-supervision
 
   # ---------------------------------------------------------------------------------------------------- #
   # Promtail service
   # This service is used to collect logs from the other services and send them to Loki.
   # ---------------------------------------------------------------------------------------------------- #
   supervision-service-promtail:
-    container_name: auth-sq_promtail
+    container_name: ${CTN_PFX:-err}promtail
     image: grafana/promtail:2.9.4
     restart: unless-stopped
     depends_on:
@@ -55,14 +55,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     networks:
-      - supervision
+      - stack-supervision
 
   # ---------------------------------------------------------------------------------------------------- #
   # Grafana service
   # This service is used to display logs from Loki and create dashboards.
   # ---------------------------------------------------------------------------------------------------- #
   supervision-service-grafana:
-    container_name: auth-sq_grafana
+    container_name: ${CTN_PFX:-err}grafana
     image: grafana/grafana:10.3.1
     restart: unless-stopped
     depends_on:
@@ -93,6 +93,6 @@ services:
       # ? Store grafana data on persistent volume in order to keep dashboards and users between container restarts
       - grafana-virtual-volume:/var/lib/grafana:rw
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      - "${GFN_PORT:-3000}:3000"
     networks:
-      - supervision
+      - stack-supervision

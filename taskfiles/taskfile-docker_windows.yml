@@ -11,8 +11,8 @@ tasks:
     preconditions:
       - sh: test -f .env
         msg: "File .env not found"
-      - sh: test -f docker-compose.yml
-        msg: "File docker-compose.yml not found"
+      - sh: test -f compose.yml
+        msg: "File compose.yml not found"
     cmds:
       - docker ps -as --format 'table {{"{{"}}.ID{{"}}"}}\t{{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Size{{"}}"}}' --filter "name={{ .DOCKER_CONTAINERS_PREFIX }}"
     silent: true
@@ -23,8 +23,8 @@ tasks:
     preconditions:
       - sh: test -f .env
         msg: "File .env not found"
-      - sh: test -f docker-compose.yml
-        msg: "File docker-compose.yml not found"
+      - sh: test -f compose.yml
+        msg: "File compose.yml not found"
     cmds:
       - echo "===================================================================================================="
       - echo "# Containers:"
@@ -48,8 +48,8 @@ tasks:
     preconditions:
       - powershell: Test-Path ../.env
         msg: "File .env not found"
-      - powershell: Test-Path ../docker-compose.yml
-        msg: "File docker-compose.yml not found"
+      - powershell: Test-Path ../compose.yml
+        msg: "File compose.yml not found"
     cmds:
       - docker compose build
     silent: true
@@ -60,8 +60,8 @@ tasks:
     preconditions:
       - powershell: Test-Path ../.env
         msg: "File .env not found"
-      - powershell: Test-Path ../docker-compose.yml
-        msg: "File docker-compose.yml not found"
+      - powershell: Test-Path ../compose.yml
+        msg: "File compose.yml not found"
     cmds:
       - docker compose up -d --remove-orphans
     silent: true
@@ -72,8 +72,8 @@ tasks:
     preconditions:
       - powershell: Test-Path ../.env
         msg: "File .env not found"
-      - powershell: Test-Path ../docker-compose.yml
-        msg: "File docker-compose.yml not found"
+      - powershell: Test-Path ../compose.yml
+        msg: "File compose.yml not found"
     cmds:
       - docker compose down
     silent: true
@@ -84,8 +84,8 @@ tasks:
     preconditions:
       - powershell: Test-Path ../.env
         msg: "File .env not found"
-      - powershell: Test-Path ../docker-compose.yml
-        msg: "File docker-compose.yml not found"
+      - powershell: Test-Path ../compose.yml
+        msg: "File compose.yml not found"
     cmds:
       - docker compose down -v
     silent: true
@@ -96,8 +96,8 @@ tasks:
     preconditions:
       - powershell: Test-Path ../.env
         msg: "File .env not found"
-      - powershell: Test-Path ../docker-compose.yml
-        msg: "File docker-compose.yml not found"
+      - powershell: Test-Path ../compose.yml
+        msg: "File compose.yml not found"
     cmds:
       - cmd: wt docker logs -f {{ .ITEM }}
         for:

@@ -3,12 +3,14 @@
 {
     "name": "ffs-auth-squared",
     "dockerComposeFile": [
-        "../docker-compose.yml"
+        "../compose.yml"
     ],
     "service": "app-service-dev",
-    "workspaceFolder": "/home/auth-squared/workspace",
+    "workspaceFolder": "/home/app-runner/app",
     "features": {
-        "ghcr.io/devcontainers/features/git:1": {}
+        "ghcr.io/devcontainers/features/common-utils:2": {},
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
     },
     "customizations": {
         "vscode": {
