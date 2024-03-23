@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.0](https://github.com/frame-forge-suite/auth-squared/compare/0.1.0..0.2.0) - 2024-03-23
+#### Build system
+- **(app)** :building_construction: fix runtime image and update local docker configuration - ([a355910](https://github.com/frame-forge-suite/auth-squared/commit/a355910f1e6e474644e6b634b863c01122456533)) - [@cyboooooorg](https://github.com/cyboooooorg)
+#### Features
+- **(app)** :sparkles: add a response for root call - ([7155085](https://github.com/frame-forge-suite/auth-squared/commit/7155085032453e050ffa7c50ce29dc9aa3d69a88)) - [@cyboooooorg](https://github.com/cyboooooorg)
+#### Refactoring
+- **(ci-cd)** :recycle: update image build and local dev stacks - ([f0f723a](https://github.com/frame-forge-suite/auth-squared/commit/f0f723ad309db6c873b72db84ab8b0c1a7d4c3d0)) - [@cyboooooorg](https://github.com/cyboooooorg)
+
+- - -
+
 ## [0.1.0](https://github.com/frame-forge-suite/auth-squared/compare/b302b7576038f79ca25caff16d8248ec7f6bdce6..0.1.0) - 2024-03-06
 #### Build system
 - **(app)** :building_construction: fix volume issue by adding a new one dedicated for app - ([ca3ecd3](https://github.com/frame-forge-suite/auth-squared/commit/ca3ecd3adb3b33d3d60a38dcbf5804503a91848a)) - [@cyboooooorg](https://github.com/cyboooooorg)
