@@ -6,8 +6,6 @@ on:
 jobs:
   cccc:
     name: C.C.C.C. (Conventional Commits Compliance Check)
-    if: |
-      ${{ !contains(github.event.pull_request.title, 'chore(release): :bookmark: update changelog') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
