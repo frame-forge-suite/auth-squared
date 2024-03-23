@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # Activate the virtual environment
-source /opt/.venv/bin/activate
+source .venv/bin/activate
+
+# Update database
+alembic upgrade head
 
 # Run the application
 python -m server

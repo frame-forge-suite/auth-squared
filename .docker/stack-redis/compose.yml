@@ -7,7 +7,7 @@ networks:
   # ---------------------------------------------------------------------------------------------------- #
   # Default network
   # ---------------------------------------------------------------------------------------------------- #
-  stack-postgresql:
+  stack-redis:
     driver: bridge
 
 # ---------------------------------------------------------------------------------------------------- #
@@ -15,37 +15,42 @@ networks:
 # ---------------------------------------------------------------------------------------------------- #
 services:
   # ---------------------------------------------------------------------------------------------------- #
-  # Database PostgreSQL Service
+  # Redis container
+  # The Redis container is the container that will run the Redis cache.
+  # It's based on the official Redis image.
   # ---------------------------------------------------------------------------------------------------- #
-  db-service-postgresql:
-    image: postgres:16.2-bullseye
-    container_name: ${CTN_PFX:-err}postgresql
+  cache-service-redis:
+    image: redis:7.2.4-alpine
+    container_name: ${CTN_PFX:-err}redis
+    command: redis-server /opt/redis/redis.conf
     restart: unless-stopped
-    env_file:
-      - ./postgresql/config/.env
-    ports:
-      - ${DB_PGSQL_EXT_PORT:-5432}:5432 # External Port to access the database with tools like DBeaver
+    volumes:
+      - ./redis/config/redis.conf:/opt/redis/redis.conf:ro
     networks:
       - default
-      - stack-postgresql
+      - stack-redis
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # ---------------------------------------------------------------------------------------------------- #
-  # Database Adminer Service
+  # RedisInsight container
+  # The RedisInsight container is the container that will run the RedisInsight web interface.
   # ---------------------------------------------------------------------------------------------------- #
-  db-service-adminer:
-    image: adminer:latest
-    container_name: ${CTN_PFX:-err}adminer
+  cache-service-redisinsight:
+    image: redis/redisinsight:2.44.0
+    container_name: ${CTN_PFX:-err}redisinsight
     restart: unless-stopped
     ports:
-      - ${ADM_PORT:-err}:8080
-    env_file:
-      - ./adminer/config/.env
+      - "${RDI_PORT:-err}:5540"
     networks:
-      - stack-postgresql
-
-volumes:
-  # ---------------------------------------------------------------------------------------------------- #
-  # PostgreSQL Data Volume
-  # ---------------------------------------------------------------------------------------------------- #
-  postgresql-data-volume:
-    driver: local
+      - stack-redis
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5540/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

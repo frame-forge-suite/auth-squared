@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Activate the virtual environment
-source /opt/.venv/bin/activate
+source resources/.venv/bin/activate
 
 # It's the dev entrypoint, so we just sleep forever
 sleep infinity

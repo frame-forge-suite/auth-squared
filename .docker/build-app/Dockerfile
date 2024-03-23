@@ -7,10 +7,9 @@
 # Pre-stage: Arguments
 # ------------------------------------------------------------------------------------------ #
 
-# * Set the default arguments values
-ARG PRJ_NAME=project
-ARG RSC_DIR=./resources
-ARG VENV_DIR=/opt/.venv
+# * Set the default arguments
+ARG PRJ_NAME=auth-squared
+ARG RSC_DIR=resources
 ARG POETRY_VERSION=1.8.2
 ARG UID=1000
 ARG GID=${UID}
@@ -19,7 +18,6 @@ ARG GRP_NAME=${USR_NAME}
 ARG USR_HOME=/home/${USR_NAME}
 ARG USR_PWD=P455w0rd
 
-
 # ------------------------------------------------------------------------------------------ #
 # End of Pre-stage: Arguments
 # ------------------------------------------------------------------------------------------ #
@@ -27,12 +25,13 @@ ARG USR_PWD=P455w0rd
 ##############################################################################################
 #
 # ------------------------------------------------------------------------------------------ #
-# Stage 00 - Base
+# Stage 01 - Base
 # This stage is used to install the system dependencies and add create the user
 # ------------------------------------------------------------------------------------------ #
 FROM python:3.12.0-bullseye AS base
 
 # * Re declare arguments
+ARG POETRY_VERSION
 ARG UID
 ARG GID
 ARG USR_NAME
@@ -55,46 +54,25 @@ RUN groupadd -g ${GID} ${GRP_NAME} && \
     echo "${USR_PWD}\n${USR_PWD}\n" | passwd ${USR_NAME} && \
     sudo adduser ${USR_NAME} sudo
 
-# ------------------------------------------------------------------------------------------ #
-# End of Stage 00 - Base
-# ------------------------------------------------------------------------------------------ #
-#
-##############################################################################################
-#
-# ------------------------------------------------------------------------------------------ #
-# Stage 01 - Build
-# This stage is used to build the application (for development and production)
-# ------------------------------------------------------------------------------------------ #
-FROM base AS build
+# * Update Path
+ENV PATH="${USR_HOME}/.local/bin:$PATH"
 
-# * Re declare arguments
-ARG PRJ_NAME
-ARG RSC_DIR
-ARG VENV_DIR
-ARG POETRY_VERSION
-ARG PIP_USR
-ARG PIP_PWD
-ARG PIP_URL
+# * Use the new user and install poetry
+USER ${USR_NAME}
 
-# * Copy the poetry files to the temporary folder
-COPY ${RSC_DIR}/poetry.lock ${RSC_DIR}/pyproject.toml /tmp/
-
-# * Set the working directory to the temporary folder
-WORKDIR /tmp
-
-# * Create the virtual environment, install poetry and the dependencies
-RUN python -m venv ${VENV_DIR} && \
-    pip install --upgrade pip && \
-    bash -c  "source ${VENV_DIR}/bin/activate" && \
+# * Install poetry in order to manage the dependencies
+RUN pip install --upgrade pip && \
     pip install poetry==${POETRY_VERSION} && \
-    poetry install --no-root --no-interaction --no-ansi -vvv
+    poetry config virtualenvs.options.always-copy true && \
+    poetry config virtualenvs.prompt "venv" && \
+    poetry config virtualenvs.in-project true
 
-# * Copy the docker entrypoints and set them executable
-COPY .docker/build-app/entrypoints/docker-entrypoint* /bin/
+# * Import entrypoints
+COPY --chown=${USR_NAME}:${GRP_NAME} .docker/build-app/entrypoints/docker-entrypoint* /bin/
 RUN chmod +x /bin/docker-entrypoint*
 
 # ------------------------------------------------------------------------------------------ #
-# End of Stage 01 - Build
+# End of Stage 01 - Base
 # ------------------------------------------------------------------------------------------ #
 #
 ##############################################################################################
@@ -103,29 +81,27 @@ RUN chmod +x /bin/docker-entrypoint*
 # Stage DEV - Development Build
 # This stage is used to run the application in development
 # ------------------------------------------------------------------------------------------ #
-FROM build AS development
+FROM base AS development
 
 # * Re declare arguments
-ARG VENV_DIR
+ARG RSC_DIR
 ARG USR_NAME
 ARG GRP_NAME
 ARG USR_HOME
-
-# * Update Path
-ENV PATH="${VENV_DIR}/bin:$PATH"
-ENV PATH="${USR_HOME}/.local/bin:$PATH"
 
 # * Set the user
 USER ${USR_NAME}
 
 # * Create and set the working directory
 # ? No need to copy the files, as they will be in the workspace through the volume
-RUN mkdir -p ${USR_HOME}/workspace
-WORKDIR ${USR_HOME}/workspace
+WORKDIR ${USR_HOME}/app
 
-# * Copy the venv and the docker entrypoints from the build stage
-COPY --from=build --chown=${USR_NAME}:${GRP_NAME} ${VENV_DIR} ${VENV_DIR}
-COPY --from=build --chown=${USR_NAME}:${GRP_NAME} /bin/docker-entrypoint* /bin/
+# * Copy poetry files to the working directory
+COPY --chown=${USR_NAME}:${GRP_NAME} ${RSC_DIR}/pyproject.toml ${RSC_DIR}/poetry.lock ${RSC_DIR}/
+
+# * Install the dependencies
+RUN cd ${RSC_DIR} &&\
+    poetry install --no-root --no-interaction --no-ansi -vvv
 
 # * Install Task (https://taskfile.dev/#/) for dev purposes
 RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
@@ -148,28 +124,22 @@ FROM base AS runtime
 # * Re declare arguments
 ARG PRJ_NAME
 ARG RSC_DIR
-ARG VENV_DIR
 ARG USR_NAME
 ARG GRP_NAME
 ARG USR_HOME
-
-# * Update Path
-ENV PATH="${VENV_DIR}/bin:$PATH"
-ENV PATH="${USR_HOME}/.local/bin:$PATH"
 
 # * Set the user
 USER ${USR_NAME}
 
 # * Copy the application files
 # ? Local `__pycache__` and `.pytest_cache` are not copied to the container thanks to the `.dockerignore` file
-COPY --chown=${USR_NAME}:${GRP_NAME} ${RSC_DIR}/ ${USR_HOME}/apps/${PRJ_NAME}/
-
-# * Copy the venv and the docker entrypoints from the build stage
-COPY --from=build --chown=${USR_NAME}:${GRP_NAME} ${VENV_DIR} ${VENV_DIR}
-COPY --from=build --chown=${USR_NAME}:${GRP_NAME} /bin/docker-entrypoint* /bin/
+COPY --chown=${USR_NAME}:${GRP_NAME} ${RSC_DIR}/ ${USR_HOME}/app/${RSC_DIR}
 
 # * Set the working directory
-WORKDIR ${USR_HOME}/apps/${PRJ_NAME}/
+WORKDIR ${USR_HOME}/app/${RSC_DIR}
+
+# * Install the dependencies
+RUN poetry install --no-root --no-interaction --no-ansi -vvv
 
 # * Set the entrypoint for the runtime container
 ENTRYPOINT ["docker-entrypoint"]

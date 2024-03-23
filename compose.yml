@@ -1,4 +1,8 @@
-version: '3.8'
+########################################################################################################
+# IMPORTANT NOTE: This file is the main Docker Compose configuration file for the project,
+# It is used to define the services and the network configuration for the project, it defines
+# the build context for the services and the target image to be built.
+########################################################################################################
 
 # Set the project name
 name: auth-squared
@@ -8,7 +12,7 @@ name: auth-squared
 # ---------------------------------------------------------------------------------------------------- #
 networks:
   # ---------------------------------------------------------------------------------------------------- #
-  # Default network
+  # Default network for the project
   # ---------------------------------------------------------------------------------------------------- #
   default:
     driver: bridge
@@ -51,13 +55,12 @@ services:
   # Development service container (for development only, not for production)
   # ---------------------------------------------------------------------------------------------------- #
   app-service-dev:
-    image: authsq:dev-local
+    image: prm:dev-local
     build:
       context: .
       dockerfile: .docker/build-app/Dockerfile
       target: development
       args:
-        PRJ_NAME: auth-squared
         UID: ${UID:-1000}
     user: ${UID:-1000}
     container_name: ${CTN_PFX:-err}dev
@@ -65,8 +68,12 @@ services:
     env_file:
       - .docker/build-app/config/.env
     volumes:
-      - venv-virtual-volume:/opt/.venv:rw
-      - workspace-physical-volume:/home/app-runner/workspace:rw
+      # ? Mount the zshrc file to the container to use the same configuration
+      - .devcontainer/config/.zshrc:/home/app-runner/.zshrc:rw
+      # ? Mount the virtual environment into a volume to share it between the containers
+      - venv-virtual-volume:/home/app-runner/app/resources/.venv:rw
+      # ? Mount the workspace into a volume to share it between the host and the container
+      - workspace-physical-volume:/home/app-runner/app:rw
     networks:
       - default
 
@@ -74,22 +81,30 @@ services:
   # API service container
   # ---------------------------------------------------------------------------------------------------- #
   app-service-api:
-    image: authsq:dev-runtime
+    image: prm:dev-runtime
     build:
       context: .
       dockerfile: .docker/build-app/Dockerfile
       target: runtime
       args:
-        PRJ_NAME: auth-squared
         UID: ${UID:-1000}
     user: ${UID:-1000}
     container_name: ${CTN_PFX:-err}api
     restart: unless-stopped
+    depends_on:
+      app-service-dev:
+        condition: service_started
+      db-service-postgresql:
+        condition: service_healthy
+      cache-service-redis:
+        condition: service_healthy
     env_file:
       - .docker/build-app/config/.env
     volumes:
-      - venv-virtual-volume:/opt/.venv:rw
-      - app-physical-volume:/home/app-runner/apps/auth-squared:rw
+      # ? Mount the virtual environment into a volume to share it between the containers
+      - venv-virtual-volume:/home/app-runner/app/resources/.venv:rw
+      # ? Mount the workspace into a volume to share it between the host and the container
+      - app-physical-volume:/home/app-runner/app/resources:rw
     ports:
       - ${APP_PORT:-err}:80
     networks:
@@ -99,6 +114,6 @@ services:
 # Include other services here
 # ---------------------------------------------------------------------------------------------------- #
 include:
-  - .docker/stack-supervision/docker-compose.yml
-  - .docker/stack-postgresql/docker-compose.yml
-  - .docker/stack-redis/docker-compose.yml
+  - .docker/stack-supervision/compose.yml
+  - .docker/stack-postgresql/compose.yml
+  - .docker/stack-redis/compose.yml

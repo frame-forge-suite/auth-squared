@@ -1,21 +1,36 @@
 {
     "keyboard.dispatch": "keyCode",
-    "python.pythonPath": "/opt/.venv/bin/python",
-    "python.defaultInterpreterPath": "/opt/.venv/bin/python",
+    "python.pythonPath": "/home/app-runner/app/resources/.venv/bin/python3",
+    "python.defaultInterpreterPath": "/home/app-runner/app/resources/.venv/bin/python3",
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,
     },
     "python.analysis.extraPaths": [
-        "/opt/.venv/lib/python3.12/site-packages/"
+        "/home/app-runner/app/resources/.venv/lib/python3.12/site-packages/"
     ],
     "python.analysis.typeCheckingMode": "off",
     "python.analysis.autoImportCompletions": false,
     "conventionalCommits.scopes": [
+        "global",
         "ci-cd",
+        "docker",
         "config",
         "docs",
+        "app",
         "auth",
-        "app"
+        "dev"
+    ],
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "db-service-postgresql",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "local-auth-squared",
+            "database": "auth-squared",
+            "username": "auth-squared",
+            "password": "P455w0rd"
+        }
     ]
 }
